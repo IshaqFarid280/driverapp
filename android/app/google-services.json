@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "312893443778",
+    "project_id": "exampledriverappofluqman",
+    "storage_bucket": "exampledriverappofluqman.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:312893443778:android:887c8fa8417c4b7cda755b",
+        "android_client_info": {
+          "package_name": "com.exampledriverappofluqman.driverapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_Rx4y5Ah_UarQDEzXrp3q7e7WZDZqT-g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
