@@ -1,9 +1,13 @@
-import 'package:driverapp/views/home_screen/map_style.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:driverapp/views/home_screen/direction_repository.dart';
-import 'package:driverapp/views/home_screen/directions_model.dart';
+import 'package:location/location.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import 'direction_repository.dart';
+import 'directions_model.dart';
+import 'map_style.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userId;
@@ -22,25 +26,59 @@ class _HomeScreenState extends State<HomeScreen> {
     zoom: 16.5,
   );
 
-  @override
-  void dispose() {
-    _googleMapController.dispose();
-    super.dispose();
-  }
-
-  bool _checked = false;
   late GoogleMapController _googleMapController;
+  late Location _location;
+  late StreamSubscription<LocationData> _locationSubscription;
+
   Marker? _origin;
   Marker? _destination;
-  Directions ? _info;
+  Directions? _info;
   Set<Polyline> _polylines = {};
 
+  bool _checked = false;
   late BitmapDescriptor pinLocationIcon;
 
   @override
   void initState() {
     super.initState();
+    _requestPermission();
+    _location = Location();
+    _locationSubscription = _location.onLocationChanged.listen(_onLocationUpdate);
     setCustomMapPin();
+  }
+
+  @override
+  void dispose() {
+    _locationSubscription.cancel();
+    _googleMapController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _requestPermission() async {
+    var status = await Permission.locationWhenInUse.status;
+    if (status.isDenied) {
+      await Permission.locationWhenInUse.request();
+    }
+  }
+
+  void _onLocationUpdate(LocationData currentLocation) {
+    final updatedPosition = LatLng(currentLocation.latitude!, currentLocation.longitude!);
+    _updateMarkerAndCamera(updatedPosition);
+  }
+
+  void _updateMarkerAndCamera(LatLng position) {
+    setState(() {
+      _origin = Marker(
+        markerId: const MarkerId('origin'),
+        infoWindow: const InfoWindow(title: 'Origin'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        position: position,
+      );
+    });
+
+    _googleMapController.animateCamera(
+      CameraUpdate.newLatLng(position),
+    );
   }
 
   void setCustomMapPin() async {
@@ -96,12 +134,12 @@ class _HomeScreenState extends State<HomeScreen> {
         alignment: Alignment.center,
         children: [
           GoogleMap(
+            myLocationEnabled: true,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             initialCameraPosition: _initialCameraPosition,
             onMapCreated: (controller) {
               _googleMapController = controller;
-              // Uncomment and define Utils.mapStyle if you have a custom map style
               controller.setMapStyle(Utils.mapStyle);
             },
             markers: {
@@ -186,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             }).toList(),
             hint: Text(
-              "Mod",
+              "Mode",
               style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -274,6 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
   void _addMarker(LatLng pos) async {
     if (_origin == null || (_origin != null && _destination != null)) {
       setState(() {
@@ -297,40 +336,36 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       });
 
-      final directions = await DirectionsRepository().getDirections(
-        mode: chosenValue,
-        origin: _origin!.position,
-        destination: pos,
-        alternatives: _checked,
-      );
+      final directions = await DirectionsRepository()
+          .getDirections(
+          origin: _origin!.position,
+          destination: pos,
+          mode: chosenValue,
+          alternatives: _checked);
 
-      // Directions is not empty make these
-      if (directions != null) {
-        Polyline polyline;
-        // Refresh screen
-        setState(() {
-          _info = directions;
-          polyline = Polyline(
-              polylineId: PolylineId("poly"),
-              color: Color.fromARGB(204, 147, 70, 140),
-              width: 6,
-              points: _info!.polylinePoints
-                  .map((e) => LatLng(e.latitude, e.longitude))
-                  .toList());
+      setState(() {
+        _info = directions;
+        _polylines.clear();
+        _polylines.add(Polyline(
+          polylineId: const PolylineId('overview_polyline'),
+          color: Colors.red,
+          width: 5,
+          points: _info!.polylinePoints
+              .map((e) => LatLng(e.latitude, e.longitude))
+              .toList(),
+        ));
 
-          _polylines.add(polyline);
-          if (_info!.alternativePolylinePoints != null) {
-            polyline = Polyline(
-                polylineId: PolylineId("poly1"),
-                color: Color.fromRGBO(255, 255, 255, 0.5),
-                width: 7,
-                points: _info!.alternativePolylinePoints.map((e) => LatLng(e.latitude, e.longitude)).toList());
-            _polylines.add(polyline);
-          }
-        });
-      }
+        if (_checked && _info!.alternativePolylinePoints != null) {
+          _polylines.add(Polyline(
+            polylineId: const PolylineId('alternative_polyline'),
+            color: Colors.grey,
+            width: 5,
+            points: _info!.alternativePolylinePoints!
+                .map((e) => LatLng(e.latitude, e.longitude))
+                .toList(),
+          ));
+        }
+      });
     }
   }
-
-
 }

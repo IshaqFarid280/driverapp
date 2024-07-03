@@ -61,7 +61,7 @@ class _ScheduledScreenState extends State<ScheduledScreen> {
     currentLocation = await location.getLocation();
     locationSubscription = location.onLocationChanged.listen((newLoc) {
       currentLocation = newLoc;
-      _updateCurrentLocationMarker();
+      // _updateCurrentLocationMarker();
     });
   }
 
@@ -84,19 +84,19 @@ class _ScheduledScreenState extends State<ScheduledScreen> {
       setState(() {});
     }
   }
-  void _updateCurrentLocationMarker() {
-    if (currentLocation != null) {
-      setState(() {
-        markers.removeWhere((m) => m.markerId.value == 'currentLocation');
-        markers.add(Marker(
-          markerId: MarkerId('currentLocation'),
-          position:
-          LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        ));
-      });
-    }
-  }
+  // void _updateCurrentLocationMarker() {
+  //   if (currentLocation != null) {
+  //     setState(() {
+  //       markers.removeWhere((m) => m.markerId.value == 'currentLocation');
+  //       markers.add(Marker(
+  //         markerId: MarkerId('currentLocation'),
+  //         position:
+  //         LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
+  //         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+  //       ));
+  //     });
+  //   }
+  // }
   Set<Marker> markers = {
     Marker(
       markerId: MarkerId('source'),
